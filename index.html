@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Apuração Presidencial 2026 – 1º turno</title>
+<style>
+:root{--bg:#f4f5f7;--card:#fff;--tx:#1b1f24;--mu:#5d6773;--bd:#dde1e6;--ac:#0b5cad;--ok:#13795b;--wa:#a15c00;--er:#b42318}
+@media(prefers-color-scheme:dark){:root{--bg:#0f1317;--card:#181e25;--tx:#e8ecf0;--mu:#98a3af;--bd:#2a323b;--ac:#6cb2ff;--ok:#4cc9a0;--wa:#e8b04a;--er:#ff8a7a}}
+*{box-sizing:border-box}body{margin:0;font:15px/1.45 system-ui,sans-serif;background:var(--bg);color:var(--tx)}
+header,main,footer{max-width:1180px;margin:0 auto;padding:12px 16px}
+header{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;justify-content:space-between}
+h1{font-size:1.3rem;margin:0}h2{font-size:1.05rem;margin:22px 0 8px}h4{margin:10px 0 4px;font-size:.85rem;color:var(--mu);text-transform:uppercase;letter-spacing:.04em}
+button{font:inherit;padding:6px 12px;border:1px solid var(--bd);background:var(--card);color:var(--tx);border-radius:8px;cursor:pointer}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:14px;margin-bottom:12px}
+.top3{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.cand{border:1px solid var(--bd);border-radius:10px;padding:12px}.cand.l{border-color:var(--ac);border-width:2px}
+.big{font-size:1.5rem;font-weight:700}.num{display:inline-block;min-width:2.2em;text-align:center;background:var(--ac);color:var(--bg);border-radius:6px;font-weight:700;padding:0 4px;margin-right:6px}
+.mu{color:var(--mu);font-size:.85rem}.bar{height:8px;background:var(--bd);border-radius:5px;overflow:hidden;margin:6px 0}.bar i{display:block;height:100%;background:var(--ac)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(440px,1fr));gap:12px}.grid .card{margin:0}
+.tw{overflow-x:auto}table{width:100%;border-collapse:collapse;font-size:.9rem}th,td{padding:6px 8px;border-bottom:1px solid var(--bd);text-align:left;vertical-align:top}th{color:var(--mu);font-size:.75rem;text-transform:uppercase;white-space:nowrap}.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}td small{display:block;color:var(--mu)}
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px}.tile{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:8px;display:flex;flex-direction:column;gap:2px;color:var(--tx);text-decoration:none;font-size:.85rem}.tr{display:grid;grid-template-columns:1fr 4.6em 5.6em;gap:4px;align-items:start}.tn{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.tc{text-align:right}.tile small{display:block;font-weight:400;color:var(--mu);font-size:.7rem}.tile.off{opacity:.5}.big2{font-weight:700;font-size:1.05rem}.sec{font-size:1.15rem;border-bottom:2px solid var(--ac);padding-bottom:4px}
+.kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin:8px 0}.kv div{background:var(--bg);border-radius:8px;padding:8px}.kv b{display:block;font-size:1.05rem}
+.win{background:var(--ok);color:#fff;padding:12px;border-radius:10px;font-weight:700;text-align:center;font-size:1.2rem;margin:8px 0}
+.warn{background:var(--card);border:1px solid var(--wa);color:var(--wa);padding:10px;border-radius:10px;margin-bottom:12px}
+.pj{font-size:.88rem;background:var(--bg);border-radius:8px;padding:8px;margin-top:8px}.pj div{display:flex;justify-content:space-between;gap:8px}
+details summary{cursor:pointer;color:var(--ac);font-size:.85rem;margin-top:6px}footer{color:var(--mu);font-size:.8rem}
+</style>
+</head>
+<body>
+<header>
+  <div><h1>Apuração Presidencial 2026 – 1º turno</h1><div class="mu" id="st">Carregando…</div></div>
+  <div><button id="rf">Atualizar</button> <button id="dm">Modo demonstração</button></div>
+</header>
+<main>
+  <div id="msg"></div>
+  <h2 class="sec">Resumo</h2>
+  <section id="main"></section>
+  <section id="sumufs" class="tiles"></section>
+  <h2 class="sec" style="margin-top:28px">Detalhes</h2>
+  <section id="prev"></section>
+  <section id="ufs" class="grid"></section>
+</main>
+<footer>Fonte: arquivos JSON públicos da Justiça Eleitoral (TSE). Site independente, sem caráter oficial; projeções e margens são estimativas. Resultado oficial: resultados.tse.jus.br</footer>
+<script>
+/* ===== CONFIGURAÇÃO ===== */
+const CFG={
+  base:'https://resultados.tse.jus.br/oficial', // ambiente oficial
+  ele:'6257',        // Eleição Geral Federal (Presidente), pleito 3220
+  cargo:'0001',      // 0001 = Presidente
+  poll:60000,        // intervalo de atualização (ms) – respeite o limite de 100 req/s/IP
+  deff:300,          // efeito de conglomerado: ~eleitores válidos por seção (cada seção ≈ 1 observação)
+  proxy:''           // opcional: prefixo de um proxy próprio, caso o navegador bloqueie por CORS
+};
+const UFS=[['ac','Acre'],['al','Alagoas'],['ap','Amapá'],['am','Amazonas'],['ba','Bahia'],['ce','Ceará'],['df','Distrito Federal'],['es','Espírito Santo'],['go','Goiás'],['ma','Maranhão'],['mt','Mato Grosso'],['ms','Mato Grosso do Sul'],['mg','Minas Gerais'],['pa','Pará'],['pb','Paraíba'],['pr','Paraná'],['pe','Pernambuco'],['pi','Piauí'],['rj','Rio de Janeiro'],['rn','Rio Grande do Norte'],['rs','Rio Grande do Sul'],['ro','Rondônia'],['rr','Roraima'],['sc','Santa Catarina'],['sp','São Paulo'],['se','Sergipe'],['to','Tocantins'],['zz','Exterior']];
+/* Caminho: {base}/ele2026/{ele}/dados/{uf}/{uf}-c{cargo}-e{ele com 6 dígitos}-u.json (padrão do simulado; confirme nas instruções do TSE) */
+const url=u=>`${CFG.proxy}${CFG.base}/ele2026/${CFG.ele}/dados/${u}/${u}-c${CFG.cargo}-e${CFG.ele.padStart(6,'0')}-u.json`;
+
+/* ===== UTILIDADES ===== */
+const $=s=>document.querySelector(s),fmt=n=>Math.round(n).toLocaleString('pt-BR'),
+ pc=n=>(n*100).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})+'%',
+ pp=n=>(n*100).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})+' p.p.',
+ esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const num=x=>{if(x==null||x==='')return 0;if(typeof x==='number')return x;let s=String(x).trim();if(s.includes(','))s=s.replace(/\./g,'').replace(',','.');return parseFloat(s)||0};
+const pick=(o,ks)=>{for(const k of ks)if(o[k]!=null&&o[k]!=='')return o[k]};
+function findCands(o){if(Array.isArray(o)){if(o.length&&o[0]&&typeof o[0]==='object'&&('nm' in o[0]||'nmu' in o[0]))return o;for(const x of o){const r=findCands(x);if(r)return r}}else if(o&&typeof o==='object'){for(const k in o){const r=findCands(o[k]);if(r)return r}}return null}
+
+/* ===== NORMALIZAÇÃO (mapeamento tolerante do EA20; ajuste aqui se os nomes dos campos diferirem) ===== */
+function fin(o){
+  o.c.sort((a,b)=>b.v-a.v);
+  o.vv=o.vv||o.c.reduce((a,x)=>a+x.v,0);
+  o.cast=o.vv+o.vb+o.vn; o.counted=o.cast+o.ab;
+  return o;
+}
+function norm(j){
+  const S={...j,...(j.abr&&j.abr[0]||{}),...(Array.isArray(j.agr)?j.agr[0]:{})};
+  const c=(findCands(j)||[]).map(o=>({n:o.n??o.num??'',nm:o.nm||o.nmu||'—',v:num(pick(o,['vap','v','vot','votos']))}));
+  const el=num(pick(S,['esi','el','te','et','e']));
+  let ab=num(pick(S,['a','ab','abs']));
+  const comp=num(pick(S,['c','comp']));
+  if(!ab&&el&&comp)ab=el-comp;
+  return fin({c,vv:num(pick(S,['vv','tvv'])),vb:num(pick(S,['vb','tvb'])),vn:num(pick(S,['vn','tvn'])),ab,el,dt:pick(j,['dg','dt'])||'',hg:pick(j,['hg','ht'])||''});
+}
+function agg(){
+  const m={},t={vv:0,vb:0,vn:0,ab:0,el:0,c:[],dt:'',hg:''};
+  UFS.forEach(([u])=>{const d=DATA[u];if(!d)return;['vv','vb','vn','ab','el'].forEach(k=>t[k]+=d[k]);d.c.forEach(x=>{(m[x.n]=m[x.n]||{n:x.n,nm:x.nm,v:0}).v+=x.v})});
+  t.c=Object.values(m);return Object.keys(m).length?fin(t):null;
+}
+
+/* ===== CÁLCULOS ===== */
+function proj(d){
+  const f=d.el?Math.min(1,d.counted/d.el):0;if(!f||!d.vv)return null;
+  const vvF=d.vv/f,n=Math.max(d.vv/CFG.deff,1);                // regra de três
+  const rows=d.c.map(x=>{const p=x.v/d.vv;
+    const moe=1.96*Math.sqrt(p*(1-p)/n)*Math.sqrt(1-f);          // IC 95% com correção de população finita
+    return{...x,p,vF:p*vvF,moe,moeV:moe*vvF}});
+  return{f,vvF,rows};
+}
+const sumLine=d=>{const f=d.el?Math.min(1,d.counted/d.el):0;return f};
+function tbl(d,k,x){
+  const p=proj(d);
+  const row=(c,i)=>{const q=p&&p.rows[i];return`<tr><td><span class="num">${esc(c.n)}</span>${esc(c.nm)}</td><td class="n">${fmt(c.v)}</td><td class="n">${d.vv?pc(c.v/d.vv):'–'}</td><td class="n">${q?fmt(q.vF):'–'}</td>${x?`<td class="n">${q?pc(q.p):'–'}</td>`:''}<td class="n">${q?'± '+pp(q.moe)+'<small>± '+fmt(q.moeV)+' votos</small>':'–'}</td></tr>`};
+  const head=`<thead><tr><th>Candidato</th><th class="n">Votos apurados</th><th class="n">% válidos</th><th class="n">Projeção final</th>${x?'<th class="n">% projetada</th>':''}<th class="n">Margem de erro</th></tr></thead>`;
+  const t=(a,off)=>`<div class="tw"><table>${head}<tbody>${a.map((c,i)=>row(c,i+off)).join('')}</tbody></table></div>`;
+  return t(d.c.slice(0,k),0)+(d.c.length>k?`<details><summary>Demais candidatos (${d.c.length-k})</summary>${t(d.c.slice(k),k)}</details>`:'');
+}
+function extraHTML(d){
+  const f=d.el?Math.min(1,d.counted/d.el):0;if(!f)return'';
+  const m=(p,n,base)=>{const e=1.96*Math.sqrt(p*(1-p)/Math.max(n/CFG.deff,1))*Math.sqrt(1-f);return`± ${pp(e)}<small>± ${fmt(e*base)} votos</small>`};
+  const castF=d.cast/f,L=[['Votos brancos',d.vb,d.cast,castF,'dos votos totais'],['Votos nulos',d.vn,d.cast,castF,'dos votos totais'],['Abstenções',d.ab,d.counted,d.el,'dos aptos']];
+  return`<h4>Brancos, nulos e abstenções</h4><div class="tw"><table><thead><tr><th>Item</th><th class="n">Apurado</th><th class="n">% (base)</th><th class="n">Projeção final</th><th class="n">% projetada</th><th class="n">Margem de erro</th></tr></thead><tbody>`+
+  L.map(([nm,v,bn,bf,lb])=>{const pr=bn?v/bn:0;return`<tr><td>${nm}</td><td class="n">${fmt(v)}</td><td class="n">${pc(pr)}<small>${lb}</small></td><td class="n">${fmt(v/f)}</td><td class="n">${pc(pr)}<small>${lb}</small></td><td class="n">${m(pr,bn,bf)}</td></tr>`}).join('')+`</tbody></table></div>`;
+}
+function needHTML(d){
+  const l=d.c[0],p=proj(d),base=d.el-d.vb-d.vn-d.ab;
+  return`<h4>Votos necessários para eleição em 1º turno (50% + 1)</h4><div class="kv"><div>Necessário (aptos − inválidos − abstenções)<b>${fmt(lim(d))}</b></div><div>${l?esc(l.nm):'Líder'}: faltam<b>${l?fmt(Math.max(0,lim(d)-l.v)):'–'}</b></div>${p?`<div>Necessário sobre válidos projetados<b>${fmt(Math.floor(p.vvF/2)+1)}</b></div>`:''}</div>`;
+}
+const note='<div class="mu">Projeção por regra de três sobre o eleitorado apurado; margem de erro (95%) diminui com a apuração e não considera viés geográfico.</div>';
+const lim=d=>Math.floor((d.el-d.vb-d.vn-d.ab)/2)+1;
+const isEleito=d=>d.c[0]&&d.el-d.vb-d.vn-d.ab>0&&d.c[0].v>=lim(d);
+const winHTML=d=>isEleito(d)?`<div class="win">ELEITO EM PRIMEIRO TURNO: ${esc(d.c[0].nm)} (${esc(d.c[0].n)})</div>`:'';
+
+/* ===== DADOS ===== */
+let DATA={},FAIL={},demoOn=/demo/.test(location.search),step=0,netErr=0;
+async function get(u){
+  if(FAIL[u]&&Date.now()-FAIL[u]<300000)return null;          // evita 404 repetido (pode bloquear o IP)
+  try{const r=await fetch(url(u),{cache:'no-cache'});
+    if(!r.ok){FAIL[u]=Date.now();return null}
+    delete FAIL[u];return norm(await r.json())}
+  catch(e){FAIL[u]=Date.now();netErr++;return null}
+}
+function demo(u){
+  let s=0;for(const ch of u)s=s*31+ch.charCodeAt(0);
+  const r=k=>{const x=Math.sin(s*97+k*13.7)*1e4;return x-Math.floor(x)};
+  const el=Math.round(u==='zz'?7e5:1e6+r(1)*3e7),f=Math.min(1,step*(.7+r(2)*.6));
+  const cast=el*f*.8,ab=el*f*.2,vb=cast*.02,vn=cast*.04,vv=cast-vb-vn;
+  const sh=[.44+r(3)*.14,.3+r(4)*.1,.1,.06],t=sh.reduce((a,b)=>a+b);
+  const c=[['13','Candidato A'],['22','Candidato B'],['12','Candidato C'],['30','Candidato D']].map(([n,nm],i)=>({n,nm,v:Math.round(vv*sh[i]/t)}));
+  return fin({c,vv:0,vb:Math.round(vb),vn:Math.round(vn),ab:Math.round(ab),el,dt:'DEMO',hg:''});
+}
+async function refresh(){
+  netErr=0;
+  if(demoOn){step=Math.min(1,step+.08);UFS.forEach(([u])=>DATA[u]=demo(u));DATA.br=null}
+  else{await Promise.all([['br'],...UFS].map(async([u])=>{const d=await get(u);if(d)DATA[u]=d}))}
+  render();
+}
+
+/* ===== RENDER ===== */
+function render(){
+  const nat=DATA.br||agg(),got=UFS.filter(([u])=>DATA[u]).length;
+  $('#msg').innerHTML=demoOn?'<div class="warn"><b>MODO DEMONSTRAÇÃO:</b> dados fictícios gerados no navegador, apenas para visualizar o layout.</div>':
+    (!nat&&netErr?'<div class="warn">Não foi possível ler os arquivos do TSE (bloqueio de CORS ou rede). Abra por um servidor/proxy próprio (ajuste <code>CFG.proxy</code>) ou use o modo demonstração.</div>':'');
+  $('#st').textContent=nat?`Atualizado ${new Date().toLocaleTimeString('pt-BR')} · totalização TSE: ${nat.dt||'–'} ${nat.hg||''} · ${got}/${UFS.length} UFs com dados`:'Aguardando dados…';
+  $('#main').innerHTML=nat?summaryHTML(nat):'<div class="card">Aguardando os primeiros resultados da totalização…</div>';
+  const order=[...UFS].sort((a,b)=>(DATA[b[0]]?DATA[b[0]].el:-1)-(DATA[a[0]]?DATA[a[0]].el:-1));
+  $('#sumufs').innerHTML=order.map(([u,nm])=>{const d=DATA[u];
+    if(!d)return`<div class="tile off"><b>${u.toUpperCase()}</b><span class="mu">aguardando</span></div>`;
+    const f=sumLine(d);
+    return`<a class="tile" href="#uf-${u}" title="${nm}"><b>${u.toUpperCase()}</b><span class="tr mu"><span></span><span class="tc">Apurado</span><span class="tc">Projeção</span></span>${(()=>{const pj=proj(d);return d.c.slice(0,2).map((x,i)=>{const q=pj&&pj.rows[i];return`<span class="tr"><span class="tn"><span class="num">${esc(x.n)}</span>${esc(x.nm)}</span><b class="tc">${d.vv?pc(x.v/d.vv):'–'}</b><b class="tc">${q?pc(q.p):'–'}<small>± ${q?pp(q.moe):''}</small></b></span>`}).join('')})()}<div class="bar"><i style="width:${f*100}%"></i></div><span class="mu">apurado ${pc(f)} · ${fmt(d.el/1e3)} mil aptos</span></a>`}).join('');
+  $('#prev').innerHTML=nat?prevHTML(nat):'';
+  $('#ufs').innerHTML=order.map(([u,nm])=>{const d=DATA[u];
+    if(!d)return`<div class="card" id="uf-${u}"><b>${nm}</b><div class="mu">Aguardando dados${FAIL[u]?' (arquivo ainda indisponível)':''}…</div></div>`;
+    const f=sumLine(d);
+    return`<div class="card" id="uf-${u}"><div style="display:flex;justify-content:space-between;gap:8px"><b>${nm}</b><span class="mu">${fmt(d.el)} aptos · apurado ${pc(f)}</span></div><div class="bar"><i style="width:${f*100}%"></i></div>
+    ${winHTML(d)}${tbl(d,3,true)}
+    <div class="kv"><div>Brancos<b>${fmt(d.vb)}</b></div><div>Nulos<b>${fmt(d.vn)}</b></div><div>Abstenções<b>${fmt(d.ab)}</b></div></div></div>`}).join('');
+}
+function summaryHTML(d){
+  const f=sumLine(d);
+  return`<div class="card"><div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px"><b>Brasil – 3 primeiros colocados</b><span class="mu">apurado ${pc(f)} do eleitorado</span></div><div class="bar"><i style="width:${f*100}%"></i></div>
+  ${winHTML(d)}${tbl({...d,c:d.c.slice(0,3)},3,true)}${extraHTML(d)}${needHTML(d)}${note}</div>`;
+}
+function prevHTML(d){
+  const inv=d.vb+d.vn,base=d.el-inv-d.ab,l=d.c[0],p=proj(d);
+  return`<div class="card"><h2 style="margin-top:0">Brasil – previsão de 50% + 1</h2>${winHTML(d)}
+  <div class="kv"><div>Votos inválidos (brancos + nulos)<b>${fmt(inv)}</b></div><div>Abstenções até agora<b>${fmt(d.ab)}</b></div><div>Eleitores aptos<b>${fmt(d.el)}</b></div>
+  <div>Aptos − inválidos − abstenções<b>${fmt(base)}</b></div><div>Necessário (50% + 1)<b>${fmt(lim(d))}</b></div>
+  <div>${l?esc(l.nm):'Líder'}: faltam<b>${l?fmt(Math.max(0,lim(d)-l.v)):'–'}</b></div></div>
+  ${p?`<div class="mu">Referência com projeção: com ${fmt(p.vvF)} votos válidos projetados, o limiar seria ${fmt(Math.floor(p.vvF/2)+1)}. ${l&&l.v/d.vv>.5?'Líder acima de 50% dos válidos apurados até agora.':'Líder abaixo de 50% dos válidos apurados até agora.'}</div>`:''}
+  <div class="mu">Fórmula parcial: inválidos e abstenções ainda crescem com a apuração, então o limiar tende a ser conservador no início. A proclamação oficial é do TSE.</div>
+  <h4>Todos os candidatos – Brasil</h4>${tbl(d,d.c.length)}
+  <div class="kv"><div>Brancos<b>${fmt(d.vb)}</b></div><div>Nulos<b>${fmt(d.vn)}</b></div><div>Abstenções<b>${fmt(d.ab)}</b></div><div>Votos válidos<b>${fmt(d.vv)}</b></div></div></div>
+  <h2>Estados (ordenados por eleitores aptos)</h2>`;
+}
+
+/* ===== INÍCIO ===== */
+$('#rf').onclick=refresh;
+$('#dm').onclick=()=>{demoOn=!demoOn;step=0;DATA={};$('#dm').textContent=demoOn?'Sair da demonstração':'Modo demonstração';refresh()};
+if(demoOn)$('#dm').textContent='Sair da demonstração';
+refresh();setInterval(refresh,CFG.poll);
+</script>
+</body>
+</html>
